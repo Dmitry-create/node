@@ -42,4 +42,3 @@ if (regexp.test(date)) {
     emitter.emit('timer', 'not condition, оnly numbers hh-dd-mm-yyyy');
         
 }
-
