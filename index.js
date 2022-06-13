@@ -1,55 +1,49 @@
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
-const colors = require('colors/safe');
+(async () => {
+    /**
+     * list (dirs, files)
+     * list -> html -> a#path
+     * url
+     *      / -> . -> list
+     *      /node_modules -> ./node_modules -> list
+     *      /index.html -> ./index.html -> content
+     */
+    const isFile = (path) => fs.lstatSync(path).isFile();
 
-const min = +process.argv[2];
-const max = +process.argv[3];
-let count = 0;
+    http.createServer( (req, res) => {
+        // console.log(req.url);
+        const fullPath = path.join(process.cwd(), req.url);
+        console.log(fullPath);
+        if (!fs.existsSync(fullPath)) return res.end('File or directory not found');
 
+        if (isFile(fullPath)) {
+            return fs.createReadStream(fullPath).pipe(res);
+        }
 
-function colorChange(i){
-  let col = [
-    colors.red(String(i)),
-    colors.green(String(i)),
-    colors.yellow(String(i))
-  ];
-//console.log(colors.black(count))
-  return (count == 2)? col[count = 0]: col[++count]
-}
+        let linksList = '';
 
-function simplNum(num){
-    for (let i = 2, max = Math.sqrt(num); i <= max; i++) {
-        if (num % i === 0) {
-          return false;
-        };
-      };
-      return num > 1;
-  };
+        // advanced
+        const urlParams = req.url.match(/[\d\w\.]+/gi);
 
-let checkNumbers = (numbers) =>{
-  if(numbers.length){
-    return numbers.forEach(number => {
-      console.log(colorChange(number))
-    })
-  }
-  console.log(colors.red('not condition number'));
-}
- 
-let allSimplNum = (i, num) => {
-  let numbers = [];
-  if (isNaN(i) || isNaN(num)) {
-      return console.log('one of arguments is not a number!');
-      
-    };
-      for (i; i <= num; i++) {
-        if (simplNum(i)) {
-          numbers.push(i)  
-        }; 
-      };
-    checkNumbers(numbers)
-  };
+        if (urlParams) {
+            urlParams.pop();
+            const prevUrl = urlParams.join('/');
+            linksList = urlParams.length ? `<li><a href="/${prevUrl}">..</a></li>` : '<li><a href="/">..</a></li>';
+        }
+        //
 
- allSimplNum(min, max);
-
-
-
-
+        fs.readdirSync(fullPath)
+            .forEach(fileName => {
+                const filePath = path.join(req.url, fileName);
+                linksList += `<li><a href="${filePath}">${fileName}</a></li>`;
+            });
+        const HTML = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8').replace('##links', linksList);
+        res.writeHead(200, {
+            'Content-Type': 'text/html',
+        })
+        return res.end(HTML);
+    }).listen(5555);
+})();
