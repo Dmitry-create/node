@@ -2,11 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>dirTree</title>
+    <title>Socket</title>
+    <script src="https://cdn.socket.io/4.2.0/socket.io.min.js" integrity="sha384-PiBR5S00EtOj2Lto9Uu81cmoyZqR57XcOna1oAuVuIEjzj0wpqDVfD0JA9eXlRsj" crossorigin="anonymous"></script>
 </head>
 <body>
-<ul>
-    links
-</ul>
+<div id="count"></div>
+
+<input id="input" type="text" aНutofocus>
+<input id="name" type="text">
+
+<button id="button">Send</button>
+<div id="messages"></div>
+<script>
+    const socket = io('localhost:5555');
+    const messagesBlock = document.querySelector('#messages');
+    const sendButton = document.querySelector('#button');
+    const input = document.querySelector('#input');
+    const name = document.querySelector('#name');
+    const counter = document.querySelector('#count');
+    
+    socket.on('connect', () => {
+        socket.on('connectUser', newUser => {
+                messagesBlock.insertAdjacentHTML('afterbegin', `<div>у нас новый гость№ ${newUser}</div>`)
+        });
+        
+    });
+    socket.on('srv-msg', answer => {
+         messagesBlock.insertAdjacentHTML('afterbegin', `<div>гость № ${answer.user}: ${answer.message}</div>`)
+    });
+    sendButton.addEventListener('click', () => {
+        const data = {
+            message: input.value,
+            user: name.value
+        };
+
+        socket.emit('client-msg', data);
+        input.value = '';
+    });
+    socket.on('countUser', count => {
+            console.log(count)
+           
+            counter.innerHTML = ` ${count} человек в on-line` ;
+        });
+    socket.on('disconnectUser', newUser => {
+         messagesBlock.insertAdjacentHTML('afterbegin', `<div>гость № ${newUser} вышел</div>`)
+    });
+   
+</script>
 </body>
-</html>
